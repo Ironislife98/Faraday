@@ -1,0 +1,10 @@
+{
+    "configurations": [
+        {
+            "type": "python",
+            "name": "Run main.py",
+            "file": "backend/main.py",
+        },
+        
+    ]
+}

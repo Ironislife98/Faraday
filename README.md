@@ -1,0 +1,1 @@
+# Faraday - A self-hosted password manager
