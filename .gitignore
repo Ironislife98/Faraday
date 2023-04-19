@@ -1,0 +1,5 @@
+.fleet/
+.idea/
+backend/sql_app4.db
+backend/venv/
+backend/__pycache__/
