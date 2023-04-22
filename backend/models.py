@@ -1,7 +1,10 @@
 from pydantic import BaseModel
 
+
 class User(BaseModel):
     username: str
-    email: str
-    fullname: str
-    disabled: bool | None = None
+    password: str | None = None
+
+
+class VaultUpdate(User):
+    vault: str

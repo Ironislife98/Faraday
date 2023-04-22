@@ -1,9 +1,10 @@
 from util.keyderivation import derive_auth_key
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 import db_interaction
 from util.common import load_config
 from typing import Annotated
+from models import User, VaultUpdate
 
 
 db: db_interaction.DatabaseHandler = db_interaction.DatabaseHandler()
@@ -12,7 +13,7 @@ config: dict = load_config()
 
 app: FastAPI = FastAPI()
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 @app.get('/')
@@ -21,28 +22,28 @@ async def root():
 
 
 @app.post("/register")
-async def register(username: str, password: str):
-    hashed_password = derive_auth_key(password, config["salt"].encode(config["format"]))
-    res = db.create_user(username, hashed_password)
+async def register(user: User):
+    hashed_password = derive_auth_key(user.password, config["salt"].encode(config["format"]))
+    res = db.create_user(user.username, hashed_password)
+    db.create_vault(user.username)
     return {"msg": res}
 
 
 @app.post("/auth")
-async def auth(username: str, password: str):
-    hashed_password = derive_auth_key(password, config["salt"].encode(config["format"]))
-    res: str = db.login(username, hashed_password)
+async def login(user: User):
+    hashed_password = derive_auth_key(user.password, config["salt"].encode(config["format"]))
+    res: str = db.login(user.username, hashed_password)
 
-    # TODO: Add json web token support here
-    return {"msg": res}
-
-
-@app.post("/token")
-async def login(form_data: Annotated[OAuth2PasswordBearer, Depends()]):
-    hashed_password = derive_auth_key(form_data.password, config["salt"].encode(config["format"]))
-    res: str = db.login(form_data.username, hashed_password)
-    return {"access_token": res, "token_type": "bearer"}
+    base64_vault: str = db.get_vault(user.username)
+    return {
+        "msg": res,
+        "vault": base64_vault
+        }
 
 
-@app.get("/items/")
-async def read_items(token: Annotated[str, Depends(oauth2_scheme)]):
-    return {"token": token}
+@app.post("/vault")
+async def update_vault(user: VaultUpdate):
+    hashed_password = derive_auth_key(user.password, config["salt"].encode(config["format"]))
+    res: str = db.login(user.username, hashed_password)
+    db.update_vault(user.username, user.vault)
+    return {"msg": "Successful"}
